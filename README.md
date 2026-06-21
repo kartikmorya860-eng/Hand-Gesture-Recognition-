@@ -1,25 +1,33 @@
 # Hand Gesture Recognition
 
-A simple hand gesture recognition project using OpenCV and NumPy.
+A webcam-based hand gesture demo powered by OpenCV and NumPy.
 
-## Overview
+## 🚀 What it does
 
-This project captures video from the webcam, detects a hand in a fixed region of interest, and counts convexity defects to recognize simple gestures.
+This project captures live video from your webcam, detects a hand in the frame, and estimates the number of convexity defects to display a medicine recommendation label.
 
-The current implementation maps gestures to medicine labels:
+### Gesture-to-medicine mapping
 
 - 0 defects: `Medicine: Paracetamol`
 - 1 defect: `Medicine: Ibuprofen`
 - 2 defects: `Medicine: Aspirin`
+- 3+ defects: `Medicine: Consult doctor`
+
+## ✨ Updated behavior
+
+- Uses the full flipped video frame for more reliable detection
+- Draws a green guidance box so you know where to place your hand
+- Displays a clear status message when detection is not ready
+- Improves skin mask preprocessing and contour filtering for better accuracy
 
 ## Files
 
-- `code.py` - main Python script for webcam capture, hand detection, and gesture mapping.
-- `Hand Gusture report.pdf` - project report.
+- `main.py` - main Python script for webcam capture, hand detection, and medicine mapping.
+- `test_cam.py` - camera diagnostic helper to verify webcam access and capture.
 
 ## Requirements
 
-- Python 3.x
+- Python 3.8+ or similar
 - OpenCV
 - NumPy
 
@@ -32,15 +40,28 @@ pip install opencv-python numpy
 ## Usage
 
 ```bash
-python code.py
+python main.py
 ```
 
-Then place your hand inside the green box and use the gesture count to see the mapped label.
+Then:
 
-Press `q` to quit.
+1. Allow the script to open your webcam.
+2. Place your hand inside the green box.
+3. Watch the medicine label appear at the top of the window.
+4. Press `q` to quit.
 
-## Notes
+## Tips for best results
 
-- The ROI is a fixed box on the screen at coordinates `100:400`.
-- Skin color detection uses an HSV threshold, so lighting conditions will affect performance.
-- This is a simple demo and may require tuning for robust gesture recognition.
+- Use moderate indoor lighting.
+- Keep your hand centered inside the green box.
+- Avoid strong shadows and very bright backlighting.
+- Move closer if the app shows `Move hand closer to camera`.
+
+## Troubleshooting
+
+- If the camera does not open, close other apps using the webcam and try again.
+- If detection is unstable, adjust lighting or reposition your hand.
+
+## Disclaimer
+
+This is a demo application for gesture detection and UI mapping only. It is not a medical diagnosis tool.

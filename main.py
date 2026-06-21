@@ -63,17 +63,12 @@ while True:
     cv2.imshow("Raw", frame)
 
     frame = cv2.flip(frame, 1)
-
-    # Safe ROI handling: clamp to frame size
     h, w = frame.shape[:2]
-    x1, y1, x2, y2 = 100, 100, 400, 400
-    x2 = min(x2, w)
-    y2 = min(y2, h)
-    if x1 >= x2 or y1 >= y2:
-        roi = frame.copy()
-    else:
-        roi = frame[y1:y2, x1:x2]
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+    # Use the full frame for detection, but draw a guidance box to help placement.
+    x1, y1, x2, y2 = 50, 50, w - 50, h - 50
+    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    roi = frame.copy()
 
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
@@ -81,33 +76,44 @@ while True:
     upper_skin = np.array([20, 255, 255], dtype=np.uint8)
     mask = cv2.inRange(hsv, lower_skin, upper_skin)
 
-    mask = cv2.dilate(mask, np.ones((3, 3), np.uint8), iterations=4)
-    mask = cv2.GaussianBlur(mask, (5, 5), 100)
+    mask = cv2.dilate(mask, np.ones((5, 5), np.uint8), iterations=2)
+    mask = cv2.erode(mask, np.ones((5, 5), np.uint8), iterations=1)
+    mask = cv2.GaussianBlur(mask, (7, 7), 0)
 
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+    medicine_text = "Show hand inside green box"
     if contours:
         cnt = max(contours, key=lambda x: cv2.contourArea(x))
-        if cv2.contourArea(cnt) > 1000:
+        area = cv2.contourArea(cnt)
+        if area > 3000:
             hull = cv2.convexHull(cnt)
             cv2.drawContours(roi, [hull], -1, (0, 255, 0), 2)
             hull_indices = cv2.convexHull(cnt, returnPoints=False)
             defects = cv2.convexityDefects(cnt, hull_indices)
 
+            count_defects = 0
             if defects is not None:
-                count_defects = 0
                 for i in range(defects.shape[0]):
                     s, e, f, d = defects[i, 0]
-                    far = tuple(cnt[f][0])
-                    cv2.circle(roi, far, 5, (0, 0, 255), -1)
-                    count_defects += 1
+                    if d > 5000:
+                        far = tuple(cnt[f][0])
+                        cv2.circle(roi, far, 5, (0, 0, 255), -1)
+                        count_defects += 1
 
-                if count_defects == 0:
-                    cv2.putText(frame, "Medicine: Paracetamol", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                elif count_defects == 1:
-                    cv2.putText(frame, "Medicine: Ibuprofen", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                elif count_defects == 2:
-                    cv2.putText(frame, "Medicine: Aspirin", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            if count_defects == 0:
+                medicine_text = "Medicine: Paracetamol"
+            elif count_defects == 1:
+                medicine_text = "Medicine: Ibuprofen"
+            elif count_defects == 2:
+                medicine_text = "Medicine: Aspirin"
+            else:
+                medicine_text = "Medicine: Consult doctor"
+        else:
+            medicine_text = "Move hand closer to camera"
+
+    cv2.putText(frame, medicine_text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+    cv2.putText(frame, "Press q to quit", (50, h - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
     cv2.imshow("Frame", frame)
     cv2.imshow("Mask", mask)
